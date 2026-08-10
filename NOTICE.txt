@@ -7,10 +7,14 @@ It does NOT modify the WNBD driver source unless patches are present under
 patches/ (each such change is marked in the corresponding patch file).
 
 The WNBD source is pinned as a git submodule at vendor/wnbd, checked out at the
-exact upstream tag named in this repository's release notes (currently 0.7.0).
+exact tag named in this repository's release notes (currently 0.7.0). The
+submodule tracks an independent community fork, currently identical to upstream
+0.7.0, because upstream is no longer actively maintained (see cloudbase/wnbd#89).
 
-  Upstream source: https://github.com/cloudbase/wnbd
-  Build/dist repo: https://github.com/ciroiriarte/wnbd-dist
+  Original upstream: https://github.com/cloudbase/wnbd  (LGPL-2.1, dormant)
+  Maintained fork:   https://github.com/ciroiriarte/wnbd  (community fork, not
+                     affiliated with or endorsed by Cloudbase Solutions)
+  Build/dist repo:   https://github.com/ciroiriarte/wnbd-dist
 
 Binary driver packages (wnbd.sys / wnbd.inf / wnbd.cat) published on this
 repository's GitHub Releases are compiled from that pinned source and

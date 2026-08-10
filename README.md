@@ -17,16 +17,23 @@ on-demand block-device mount of restored images.
 
 ## What this is (and isn't)
 
-- **Is:** a thin *distribution* wrapper — it pins upstream WNBD as a submodule
+- **Is:** a thin *distribution* wrapper — it pins the WNBD source as a submodule
   and adds build + CAB packaging + signing + release tooling.
-- **Isn't:** a fork. No driver source is modified unless a patch exists under
-  [`patches/`](patches/); each such change is marked in its patch file.
+- **Isn't:** the driver source. The source lives in a separate maintained fork,
+  [`ciroiriarte/wnbd`](https://github.com/ciroiriarte/wnbd), which this repo
+  pins as `vendor/wnbd`. No driver source is modified here.
+
+> **Upstream is dormant.** As of 2026-08-10 Cloudbase [is no longer actively
+> maintaining WNBD][issue89] ("lack of commercial demand"). `ciroiriarte/wnbd`
+> is an independent community fork, currently identical to upstream `0.7.0`,
+> kept as the home for any future Windows 11 / HVCI / WDK-drift fixes. It is not
+> affiliated with or endorsed by Cloudbase Solutions.
 
 ## Layout
 
 ```text
 wnbd-dist/
-├── vendor/wnbd/          # git submodule — cloudbase/wnbd pinned to a tag (0.7.0)
+├── vendor/wnbd/          # git submodule — ciroiriarte/wnbd (fork of cloudbase/wnbd) pinned to 0.7.0
 ├── patches/              # optional git-format-patch files applied before build
 ├── scripts/
 │   ├── apply-patches.ps1        # apply patches/ onto the submodule
