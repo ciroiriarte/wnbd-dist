@@ -1,0 +1,59 @@
+name: build
+
+# CI build on every push/PR: compile the driver and validate the INF/catalog.
+# This produces an UNSIGNED artifact for review only — it will NOT load on a
+# normal machine. Production signing happens in release.yml on a version tag.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build-driver:
+    runs-on: windows-2022
+    steps:
+      - name: Checkout (with submodule)
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Apply local patches
+        shell: pwsh
+        run: ./scripts/apply-patches.ps1
+
+      # The EWDK is not preinstalled on GitHub runners. Point EWDK_ROOT at a
+      # cached/downloaded EWDK, or swap this job to a self-hosted runner that
+      # already has VS Build Tools + matching WDK. Download URL/version is
+      # intentionally not hardcoded — set it as a repo variable to keep builds
+      # reproducible and auditable.
+      - name: Resolve EWDK
+        id: ewdk
+        shell: pwsh
+        run: |
+          if (-not $env:EWDK_ROOT) {
+            Write-Warning "EWDK_ROOT not set. Set the repo variable vars.EWDK_ROOT (self-hosted) or add an EWDK download step."
+            exit 1
+          }
+          "root=$env:EWDK_ROOT" >> $env:GITHUB_OUTPUT
+        env:
+          EWDK_ROOT: ${{ vars.EWDK_ROOT }}
+
+      - name: Build (Release|x64)
+        shell: pwsh
+        run: ./scripts/Invoke-EwdkBuild.ps1 -EwdkRoot "${{ steps.ewdk.outputs.root }}" -Configuration Release
+
+      - name: Stage unsigned CAB (no signing in CI)
+        shell: pwsh
+        run: ./scripts/New-DriverCab.ps1 -DriverDir vendor/wnbd/vstudio/x64/Release/driver
+
+      - name: Upload unsigned artifact (review only — will not load)
+        uses: actions/upload-artifact@v4
+        with:
+          name: wnbd-unsigned-${{ github.sha }}
+          path: |
+            vendor/wnbd/vstudio/x64/Release/driver/wnbd.sys
+            vendor/wnbd/vstudio/x64/Release/driver/wnbd.inf
+            release-staging/wnbd.cab
+          if-no-files-found: error

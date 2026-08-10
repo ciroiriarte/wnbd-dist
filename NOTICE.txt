@@ -1,0 +1,24 @@
+WNBD (Windows Network Block Device) kernel driver
+Copyright (c) Cloudbase Solutions Srl and contributors.
+Licensed under the GNU Lesser General Public License, version 2.1 (LGPL-2.1).
+
+This repository (wnbd-dist) contains only build, packaging and signing tooling.
+It does NOT modify the WNBD driver source unless patches are present under
+patches/ (each such change is marked in the corresponding patch file).
+
+The WNBD source is pinned as a git submodule at vendor/wnbd, checked out at the
+exact upstream tag named in this repository's release notes (currently 0.7.0).
+
+  Upstream source: https://github.com/cloudbase/wnbd
+  Build/dist repo: https://github.com/ciroiriarte/wnbd-dist
+
+Binary driver packages (wnbd.sys / wnbd.inf / wnbd.cat) published on this
+repository's GitHub Releases are compiled from that pinned source and
+Microsoft-attestation-signed. Complete corresponding source for any released
+binary is available from:
+  1. the vendor/wnbd submodule commit recorded in the matching release tag, and
+  2. the patches/ directory (if any) in that same tag, and
+  3. the build scripts under scripts/, which reproduce the build.
+
+You may replace the WNBD driver on your system with your own compatible build;
+see README.md ("Rebuilding from source") for instructions.

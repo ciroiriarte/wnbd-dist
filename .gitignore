@@ -1,0 +1,26 @@
+# Build output / staging (never commit binaries — they belong on GitHub Releases)
+release-staging/*
+!release-staging/.gitkeep
+build/
+*.sys
+*.cat
+*.cab
+*.pdb
+*.msi
+
+# EWDK / tooling
+ewdk/
+*.iso
+
+# Secrets — must NEVER be committed
+*.pfx
+*.snk
+*.p12
+*.pem
+secrets.*
+.env
+
+# OS / editor cruft
+Thumbs.db
+.DS_Store
+*.swp

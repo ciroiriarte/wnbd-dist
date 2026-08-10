@@ -1,0 +1,90 @@
+name: release
+
+# Triggered by a version tag (vX.Y.Z). Builds, EV-signs the CAB, submits to
+# Partner Center for attestation, verifies the Microsoft-signed result, and
+# publishes it as a GitHub Release the downstream MSI consumes.
+#
+# EV signing and Partner Center credentials are gated behind the protected
+# 'signing' Environment (required reviewers + secrets). The EV private key is
+# NEVER stored as a plain secret — it lives on an HSM / cloud signing service
+# reached via the AzureSignTool invocation in vars.SIGN_COMMAND.
+
+on:
+  push:
+    tags: ['v*.*.*']
+  workflow_dispatch:
+    inputs:
+      product_name:
+        description: 'Partner Center product name (e.g. "wnbd 0.7.0")'
+        required: true
+
+permissions:
+  contents: write   # create the GitHub Release
+  id-token: write   # OIDC for Entra / cloud signing (no stored key)
+
+jobs:
+  sign-and-release:
+    runs-on: windows-2022
+    environment: signing   # protected: requires reviewer approval before secrets are exposed
+    steps:
+      - name: Checkout (with submodule)
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Apply local patches
+        shell: pwsh
+        run: ./scripts/apply-patches.ps1
+
+      - name: Build (Release|x64)
+        shell: pwsh
+        run: ./scripts/Invoke-EwdkBuild.ps1 -EwdkRoot "${{ vars.EWDK_ROOT }}" -Configuration Release
+
+      - name: Package + EV-sign CAB
+        shell: pwsh
+        env:
+          SIGN_COMMAND: ${{ vars.SIGN_COMMAND }}   # e.g. AzureSignTool ... {CAB}
+        run: ./scripts/New-DriverCab.ps1 -DriverDir vendor/wnbd/vstudio/x64/Release/driver -SignCommand "$env:SIGN_COMMAND"
+
+      - name: Submit for attestation + download signed package
+        shell: pwsh
+        env:
+          PC_TENANT_ID: ${{ secrets.PC_TENANT_ID }}
+          PC_CLIENT_ID: ${{ secrets.PC_CLIENT_ID }}
+          PC_CLIENT_SECRET: ${{ secrets.PC_CLIENT_SECRET }}
+          PRODUCT_NAME: ${{ github.event.inputs.product_name || github.ref_name }}
+        run: |
+          ./scripts/Submit-Attestation.ps1 `
+            -CabPath release-staging/wnbd.cab `
+            -ProductName "$env:PRODUCT_NAME" `
+            -TenantId "$env:PC_TENANT_ID" `
+            -ClientId "$env:PC_CLIENT_ID" `
+            -ClientSecret "$env:PC_CLIENT_SECRET"
+
+      - name: Verify Microsoft signature
+        shell: pwsh
+        run: ./scripts/Test-DriverSignature.ps1 -SignedDir release-staging/signed
+
+      - name: Assemble release bundle (signed driver + source offer)
+        shell: pwsh
+        run: |
+          $out = 'release-staging/bundle'
+          New-Item -ItemType Directory -Force -Path $out | Out-Null
+          Copy-Item release-staging/signed/* $out -Recurse -Force
+          Copy-Item NOTICE.txt, LICENSE $out
+          # LGPL source offer: exact pinned source for this release.
+          git -C vendor/wnbd archive --format=tar.gz -o "$out/wnbd-source.tar.gz" HEAD
+          if (Test-Path patches) { Compress-Archive patches/* "$out/patches.zip" -Force -ErrorAction SilentlyContinue }
+          Compress-Archive "$out/*" "release-staging/wnbd-signed-${{ github.ref_name }}.zip" -Force
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release-staging/wnbd-signed-${{ github.ref_name }}.zip
+          fail_on_unmatched_files: true
+          body: |
+            Microsoft-attestation-signed WNBD driver built from the pinned
+            `vendor/wnbd` submodule at this tag.
+
+            Verify: `signtool verify /kp /v wnbd.cat`
+            LGPL-2.1 source: `wnbd-source.tar.gz` (+ `patches.zip` if present).
