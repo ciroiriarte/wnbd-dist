@@ -54,9 +54,10 @@ wnbd-dist/
 ## Status
 
 Scaffolding is complete and the pipeline is wired end-to-end, but **it has not
-yet produced a signed release** — that requires the one-time prerequisites below
-and a first real run. Nothing here is verified against a live Partner Center
-account yet.
+yet produced a signed release**. Microsoft signing is currently **parked** while
+we pursue sponsored signing via **OSSign** — see
+[`docs/SIGNING-STATUS.md`](docs/SIGNING-STATUS.md). In the meantime, WNBD work
+proceeds against an **unsigned** driver on a test-signing VM.
 
 ## Prerequisites (one-time)
 
