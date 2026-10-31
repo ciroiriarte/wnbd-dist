@@ -33,7 +33,7 @@ on-demand block-device mount of restored images.
 
 ```text
 wnbd-dist/
-├── vendor/wnbd/          # git submodule — ciroiriarte/wnbd (fork of cloudbase/wnbd) pinned to 0.7.0
+├── vendor/wnbd/          # git submodule — ciroiriarte/wnbd (fork of cloudbase/wnbd) pinned to 9385a23 (0.7.0-13)
 ├── patches/              # optional git-format-patch files applied before build
 ├── scripts/
 │   ├── apply-patches.ps1        # apply patches/ onto the submodule
@@ -54,8 +54,9 @@ wnbd-dist/
 ## Status
 
 Scaffolding is complete and the pipeline is wired end-to-end, but **it has not
-yet produced a signed release**. Microsoft signing is currently **parked** while
-we pursue sponsored signing via **OSSign** — see
+yet produced a signed release**. Windows Server support requires a **WHQL**
+signature (attestation-signed drivers don't load on Server), so the target is
+HLK-tested WHQL signing sponsored by **OSSign** — see
 [`docs/SIGNING-STATUS.md`](docs/SIGNING-STATUS.md). In the meantime, WNBD work
 proceeds against an **unsigned** driver on a test-signing VM.
 
